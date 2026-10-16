@@ -1,0 +1,20 @@
+import {test,expect} from '@playwright/test';
+import * as XLSX from 'xlsx';
+import {readFileSync} from 'node:fs';
+test('完整运营流程：新增、编辑、刷新、筛选、投流、Excel 与删除',async({page})=>{
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto('/');await expect(page.getByRole('heading',{name:'数据概览'})).toBeVisible();
+ await expect(page.locator('.stat-card')).toHaveCount(5);
+ await page.getByRole('button',{name:'添加笔记',exact:true}).click();
+ await page.getByLabel('笔记标题').fill('自动化测试笔记');await page.getByLabel('曝光量',{exact:true}).fill('1000');await page.getByLabel('阅读量',{exact:true}).fill('200');await page.getByRole('button',{name:'保存数据'}).click();
+ await page.getByRole('button',{name:'笔记管理',exact:true}).click();await page.getByLabel('搜索笔记').fill('自动化测试笔记');await expect(page.locator('tbody tr')).toHaveCount(1);
+ await page.getByTitle('编辑',{exact:true}).click();await page.getByLabel('笔记标题').fill('自动化测试笔记已编辑');await page.getByRole('button',{name:'保存数据'}).click();
+ await page.reload();await page.getByRole('button',{name:'笔记管理',exact:true}).click();await page.getByLabel('搜索笔记').fill('自动化测试笔记已编辑');await expect(page.locator('tbody tr')).toHaveCount(1);
+ await page.getByLabel('账号筛选').selectOption('a2');await expect(page.locator('tbody tr')).toHaveCount(0);await page.getByLabel('账号筛选').selectOption('all');
+ await page.getByRole('button',{name:'投流管理',exact:true}).click();await page.getByRole('button',{name:'新增投流',exact:true}).click();await page.getByLabel('投流名称').fill('测试投流');await page.getByLabel('投放金额（元）').fill('300');await page.getByLabel('私信数量',{exact:true}).fill('20');await page.getByLabel('有效线索数量').fill('6');await expect(page.locator('.calculated strong')).toHaveText('¥50');await page.getByRole('button',{name:'保存数据'}).click();await page.getByLabel('搜索投流').fill('测试投流');await expect(page.locator('tbody .cost')).toHaveText('¥50');
+ const downloadPromise=page.waitForEvent('download');await page.getByRole('button',{name:'导出数据'}).click();const download=await downloadPromise;const path=await download.path();const wb=XLSX.read(readFileSync(path),{type:'buffer'});expect(wb.SheetNames).toEqual(['笔记数据','投流数据','账号列表']);
+ await page.locator('input[type=file]').setInputFiles(path);await expect(page.getByRole('status')).toContainText('已导入');await expect(page.locator('tbody tr')).toHaveCount(1);
+ await page.getByRole('button',{name:'笔记管理',exact:true}).click();await page.getByLabel('搜索笔记').fill('自动化测试笔记已编辑');page.once('dialog',d=>d.accept());await page.getByTitle('删除',{exact:true}).click();await expect(page.locator('tbody tr')).toHaveCount(0);expect(errors).toEqual([]);
+ await page.setViewportSize({width:390,height:844});await page.getByRole('button',{name:'添加笔记',exact:true}).click();await expect(page.getByRole('dialog')).toBeVisible();await page.getByRole('button',{name:'关闭',exact:true}).click();
+});
+test('桌面看板截图与移动布局',async({page})=>{await page.setViewportSize({width:1440,height:1100});await page.goto('/');await expect(page.locator('.recharts-surface').first()).toBeVisible();await page.screenshot({path:'/tmp/hongshu-dashboard.png',fullPage:true});await page.setViewportSize({width:390,height:844});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true)});
