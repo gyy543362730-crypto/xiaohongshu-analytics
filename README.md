@@ -4,7 +4,7 @@
 
 ## 使用
 
-已启动的云环境开发服务使用 **5173 端口**。如平台提供端口预览，请选择该端口。下载项目在自己电脑运行时，浏览器打开 `http://localhost:5173`。
+已启动的云环境开发服务使用 **5173 端口**。如平台提供端口预览，请选择该端口。下载项目在自己电脑运行时，浏览器打开 `http://localhost:5173/xiaohongshu-analytics/`。
 
 ```bash
 npm ci --cache /workspace/.npm-cache
@@ -46,3 +46,20 @@ npm run test:e2e   # 开发服务运行时执行浏览器流程测试
 浏览器测试使用环境已有的 `/usr/bin/chromium`；个人电脑可在 `playwright.config.js` 调整浏览器路径，或删除 executablePath 配置并执行 `npx playwright install chromium`。
 
 技术栈：React、Vite、Recharts、Lucide、SheetJS、Vitest、Playwright。第一版不包含服务端、真实账号接口、多人协作或跨设备同步。中文字体有在线增强，无法访问时自动使用系统字体。
+
+## GitHub Pages 免费部署
+
+本项目使用 React 19 + Vite 6，构建产物为 `dist/`，无需服务器。Vite 的 `base` 为 `/xiaohongshu-analytics/`，适用于此 GitHub 项目站点。
+
+1. 打开仓库 → **Settings** → 左侧 **Pages**。
+2. 在 **Build and deployment** 下，将 **Source** 选择为 **GitHub Actions**。
+3. 打开 **Actions** → **Deploy to GitHub Pages**。推送 main 会自动部署；如首次工作流失败，在选择 Source 后点击 **Re-run all jobs**，或 **Run workflow** → 选择 main → **Run workflow**。
+4. 等待 build 和 deploy 均显示绿色成功，再打开 https://gyy543362730-crypto.github.io/xiaohongshu-analytics/ 。
+
+工作流安装锁定依赖、执行数据规则测试、构建并通过官方 Pages Actions 发布。后续推送 main 自动更新。
+
+如果仓库为私有且免费账户不支持 Pages，请确认可公开全部代码后，再在 Settings → General → Danger Zone → Change repository visibility 中改为 Public；不要公开敏感文件。若 Actions 被禁用，先在 Actions 页面按提示启用工作流。
+
+页面内部通过 React 状态切换栏目，不创建 `/notes` 等子路径；刷新实际站点路径仍会返回首页，再从本地存储读取数据，不依赖服务器路由重写。不要使用不存在的子路径。
+
+本地生产预览：`npm run build` 后执行 `npx vite preview --host 0.0.0.0 --port 4173`，访问 `/xiaohongshu-analytics/`。GitHub Pages 使用 HTTPS；从开发地址切换到正式地址时浏览器存储相互独立，请先从原页面导出 Excel，再在新站点导入。公开部署不会上传用户浏览器中的本地记录，首次访问仍显示模拟数据。
